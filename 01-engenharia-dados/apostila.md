@@ -44,6 +44,27 @@ Todas as tabelas que você criar ficam isoladas em `workshop_dev.<seu_usuario>`.
 
 ---
 
+## Como você vai trabalhar: Databricks Assistant
+
+Neste workshop você **não digita SQL na mão**. Em vez disso, descreve em
+português o que quer e deixa o **Databricks Assistant** (a IA do notebook) gerar
+o código para você:
+
+1. Numa célula vazia, abra o Assistant (ícone ✨ ou `Cmd/Ctrl + I`).
+2. Cole/adapte o **PROMPT sugerido** do exercício.
+3. **Sempre revise** o SQL gerado antes de rodar — comparar com a pasta
+   `respostas/` é uma ótima forma de aprender.
+
+> A IA é uma copiloto: ela acelera, mas **você** valida o resultado. Entender
+> *por que* o SQL está correto é o objetivo do workshop.
+
+### Menos exercícios, mais foco
+
+Cada notebook tem **poucas células de exercício** (marcadas com ⭐), sempre no
+**ponto-chave** do módulo. O "encanamento" repetitivo já vem em **células
+prontas** para rodar — assim o pipeline flui e você concentra energia no que
+importa.
+
 ## Padrão dos notebooks
 
 Todo notebook começa declarando o seu schema numa variável de sessão:
@@ -65,17 +86,20 @@ Assim o mesmo código funciona para todos, sem colisão de nomes.
 
 ## Agenda (dia inteiro, ~6–8h)
 
-| # | Módulo | Duração | O que você aprende |
-|---|--------|---------|--------------------|
-| 00 | Setup & exploração | 30 min | conhecer os dados, `SHOW`/`DESCRIBE`, profiling |
-| 01 | Bronze — ingestão | 45 min | CTAS, coluna de ingestão, idempotência |
-| 02 | Silver — limpeza | 60 min | tipagem, `FL_EXCLUIDO`, dedup (`QUALIFY`), quarentena |
-| 03 | Silver — eventos & vigências (SCD2) | 60 min | `UNION ALL`, `LAG`, `FIRST_VALUE`, precedência AND/OR |
-| — | **Almoço** | — | — |
-| 04 | Gold — tabela enriquecida | 75 min | joins, surrogate key, features (idade, churn) |
-| 05 | Qualidade de dados | 45 min | painel de métricas, porta de qualidade |
-| 06 | Lakeflow Declarative Pipeline | 75 min | MV declarativas + `CONSTRAINT EXPECT` |
-| 07 | Consumo & orquestração | 45 min | views de churn, Job vs. Pipeline |
+| # | Módulo | Duração | ⭐ Exercícios | O que você aprende |
+|---|--------|---------|:---:|--------------------|
+| 00 | Setup & exploração | 30 min | 1 | conhecer os dados; integridade referencial |
+| 01 | Bronze — ingestão | 45 min | 1 | CTAS, coluna de ingestão, idempotência |
+| 02 | Silver — limpeza | 60 min | 1 | tipagem, `FL_EXCLUIDO`, dedup (`QUALIFY`), quarentena |
+| 03 | Silver — eventos & vigências (SCD2) | 60 min | 2 | `UNION ALL`, `LAG`, `FIRST_VALUE`, precedência AND/OR |
+| — | **Almoço** | — | — | — |
+| 04 | Gold — tabela enriquecida | 75 min | 1 | joins, surrogate key, features (idade, churn) |
+| 05 | Qualidade de dados | 45 min | 1 | painel de métricas, porta de qualidade |
+| 06 | Lakeflow Declarative Pipeline | 75 min | 1 | MV declarativas + `CONSTRAINT EXPECT` |
+| 07 | Consumo & orquestração | 45 min | 1 | análise de churn, Job vs. Pipeline |
+
+> Os exercícios ⭐ são os pontos-chave de cada módulo, resolvidos com o
+> **Databricks Assistant**. As demais células já vêm prontas.
 
 ---
 
@@ -201,6 +225,8 @@ tabela é. O Lakeflow resolve dependências, materializa e aplica qualidade via
 ## Regras de ouro
 
 1. Escreva **sempre** no seu schema (`workshop_dev.<seu_usuario>`).
-2. Tente resolver antes de olhar o gabarito (`respostas/`).
+2. Nos exercícios ⭐, use o **Assistant** com o prompt sugerido — e **revise** o
+   SQL gerado antes de rodar.
 3. Rode as células **em ordem** — cada módulo depende do anterior.
-4. Em caso de dúvida, chame o instrutor. 🙂
+4. Confira o gabarito (`respostas/`) só depois de tentar.
+5. Em caso de dúvida, chame o instrutor. 🙂

@@ -13,6 +13,10 @@ Construir, camada a camada (bronze → silver → gold), a tabela
 Times que trabalham com **SQL** (não é necessário Python). O único código Python
 é o notebook de setup, rodado uma vez.
 
+Os exercícios são resolvidos com o **Databricks Assistant**: o participante
+escreve um prompt em português e a IA gera o SQL. Cada notebook tem poucos
+exercícios (⭐), sempre nos pontos-chave; o restante já vem em células prontas.
+
 ## Estrutura do repositório
 
 ```

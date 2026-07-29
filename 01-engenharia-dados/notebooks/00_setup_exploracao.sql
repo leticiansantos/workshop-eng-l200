@@ -2,10 +2,18 @@
 -- MAGIC %md
 -- MAGIC # Módulo 00 — Setup e Exploração dos Dados
 -- MAGIC
--- MAGIC Antes de construir, vamos **conhecer** a camada bronze (`hapvida_dev.bronze`),
--- MAGIC que é **somente leitura** e tem 3 tabelas.
+-- MAGIC Vamos conhecer a camada bronze (`hapvida_dev.bronze`, **somente leitura**).
 -- MAGIC
--- MAGIC > Preencha os trechos marcados com `-- TODO`. Confira o gabarito só depois de tentar.
+-- MAGIC ## Como usar o Databricks Assistant ("Genie") neste workshop
+-- MAGIC Em vez de digitar SQL na mão, você vai **descrever em português** o que quer
+-- MAGIC e deixar o **Databricks Assistant** gerar o SQL para você:
+-- MAGIC
+-- MAGIC 1. Em uma célula vazia, clique no ícone do **Assistant** (✨) ou pressione
+-- MAGIC    `Cmd/Ctrl + I`.
+-- MAGIC 2. Escreva o prompt (texto em português) e gere o código.
+-- MAGIC 3. **Revise** o SQL gerado, rode e confira o resultado.
+-- MAGIC
+-- MAGIC > Nos blocos **PROMPT** abaixo está o texto sugerido. Ajuste como quiser.
 
 -- COMMAND ----------
 
@@ -14,58 +22,31 @@ DECLARE OR REPLACE VARIABLE meu_schema STRING
 
 -- COMMAND ----------
 
-SELECT meu_schema AS schema_de_trabalho, current_user() AS usuario;
+-- MAGIC %md
+-- MAGIC ## Célula pronta — visão geral das tabelas
+-- MAGIC Rode para ver o volume das 3 tabelas de origem.
+
+-- COMMAND ----------
+
+SELECT
+  (SELECT COUNT(*) FROM hapvida_dev.bronze.raw_hap_tb_pessoa)  AS qt_pessoa,
+  (SELECT COUNT(*) FROM hapvida_dev.bronze.raw_hap_tb_usuario) AS qt_usuario,
+  (SELECT COUNT(*) FROM hapvida_dev.bronze.raw_hap_au_usuario) AS qt_auditoria;
 
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC ## Exercício 1 — Liste as tabelas da camada bronze
+-- MAGIC ## ⭐ Exercício-chave (com o Assistant) — Integridade referencial
+-- MAGIC
+-- MAGIC **PROMPT sugerido para o Assistant:**
+-- MAGIC > _"Conte quantos beneficiários da tabela `hapvida_dev.bronze.raw_hap_tb_usuario`
+-- MAGIC > não têm pessoa correspondente em `hapvida_dev.bronze.raw_hap_tb_pessoa`,
+-- MAGIC > fazendo um LEFT JOIN por CD_PESSOA e contando onde a pessoa é nula."_
+-- MAGIC
+-- MAGIC Esses são os beneficiários **órfãos** — vamos tratá-los no módulo 02.
+-- MAGIC Gere o SQL com o Assistant na célula abaixo, rode e observe o resultado.
 
 -- COMMAND ----------
 
--- TODO: use SHOW TABLES para listar as tabelas em hapvida_dev.bronze
-
-
--- COMMAND ----------
-
--- MAGIC %md
--- MAGIC ## Exercício 2 — Descreva a estrutura da tabela de beneficiários
-
--- COMMAND ----------
-
--- TODO: use DESCRIBE TABLE em hapvida_dev.bronze.raw_hap_tb_usuario
-
-
--- COMMAND ----------
-
--- MAGIC %md
--- MAGIC ## Exercício 3 — Conte os registros de cada tabela
-
--- COMMAND ----------
-
--- TODO: retorne, numa única query, a contagem de linhas das 3 tabelas bronze
---       (raw_hap_tb_pessoa, raw_hap_tb_usuario, raw_hap_au_usuario)
-
-
--- COMMAND ----------
-
--- MAGIC %md
--- MAGIC ## Exercício 4 — Distribuição de status dos beneficiários
--- MAGIC (2 = ativo, 4 = cancelado)
-
--- COMMAND ----------
-
--- TODO: agrupe raw_hap_tb_usuario por FL_STATUS_USUARIO e conte
-
-
--- COMMAND ----------
-
--- MAGIC %md
--- MAGIC ## Exercício 5 — Quantos beneficiários órfãos existem?
--- MAGIC (beneficiários sem pessoa correspondente — candidatos a quarentena)
-
--- COMMAND ----------
-
--- TODO: LEFT JOIN de raw_hap_tb_usuario com raw_hap_tb_pessoa por CD_PESSOA,
---       contando onde a pessoa é NULL
+-- 👉 Gere o SQL aqui com o Databricks Assistant (Cmd/Ctrl + I) usando o prompt acima.
 
