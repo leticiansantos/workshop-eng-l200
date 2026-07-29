@@ -1,0 +1,42 @@
+# Databricks Asset Bundle (opcional) — Workshop Hapvida x Databricks
+# Alternativa ao deploy.sh para publicar os artefatos do workshop.
+#
+# Uso:
+#   databricks bundle deploy -t dev
+#
+bundle:
+  name: hapvida-saude-workshop
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: https://adb-7405610863872788.8.azuredatabricks.net
+      root_path: /Workspace/Shared/hapvida-saude-workshop/.bundle/${bundle.name}
+
+# Os notebooks são publicados como arquivos do workspace. Para orquestrar o
+# pipeline como Job, adicione um recurso 'jobs' aqui apontando para os
+# notebooks de 01-engenharia-dados/respostas na ordem 00 -> 07.
+#
+# Exemplo (descomente e ajuste o warehouse_id/serverless conforme seu ambiente):
+#
+# resources:
+#   jobs:
+#     churn_pipeline:
+#       name: "Hapvida - Pipeline Churn (Workshop)"
+#       tasks:
+#         - task_key: bronze
+#           notebook_task:
+#             notebook_path: ./01-engenharia-dados/respostas/01_bronze_ingestao.sql
+#         - task_key: silver_usuario_pessoa
+#           depends_on: [{ task_key: bronze }]
+#           notebook_task:
+#             notebook_path: ./01-engenharia-dados/respostas/02_silver_usuario_pessoa.sql
+#         - task_key: silver_vigencias
+#           depends_on: [{ task_key: silver_usuario_pessoa }]
+#           notebook_task:
+#             notebook_path: ./01-engenharia-dados/respostas/03_silver_eventos_vigencias.sql
+#         - task_key: gold
+#           depends_on: [{ task_key: silver_vigencias }]
+#           notebook_task:
+#             notebook_path: ./01-engenharia-dados/respostas/04_gold_beneficiario_enriquecida.sql

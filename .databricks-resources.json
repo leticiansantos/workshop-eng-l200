@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "type": "schema",
+      "name": "workshop_dev.leticia_santos",
+      "id": "workshop_dev.leticia_santos",
+      "created_at": "2026-07-29T02:23:02.401483+00:00",
+      "updated_at": "2026-07-29T02:23:02.401483+00:00"
+    }
+  ]
+}
