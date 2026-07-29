@@ -18,14 +18,25 @@ DECLARE OR REPLACE VARIABLE meu_schema STRING
 -- MAGIC
 -- MAGIC Este é o coração da limpeza. **PROMPT sugerido para o Assistant:**
 -- MAGIC > _"Crie a tabela IDENTIFIER(meu_schema || '.slv_usuario_pessoa') juntando
--- MAGIC > `hapvida_dev.bronze.raw_hap_tb_usuario` com `raw_hap_tb_pessoa` por CD_PESSOA.
--- MAGIC > Antes do join, em cada tabela: filtre FL_EXCLUIDO = 0, converta as colunas
--- MAGIC > decimais para BIGINT/INT/DATE/DECIMAL(18,2) apropriados, e mantenha apenas
--- MAGIC > a versão mais recente por chave usando QUALIFY ROW_NUMBER() ordenado por
--- MAGIC > dt_carga_bronze DESC. Use INNER JOIN para manter só beneficiários com
--- MAGIC > cadastro válido. Traga NU_USUARIO, NU_TITULAR, FL_STATUS_USUARIO, CD_PLANO,
--- MAGIC > datas de cadastramento/cancelamento, CD_CANCELAMENTO, CD_USUARIO,
--- MAGIC > VL_MENSALIDADE, e da pessoa: CD_PESSOA, DT_NASCIMENTO, sexo, CPF/CNPJ e nome."_
+-- MAGIC > `hapvida_dev.bronze.raw_hap_tb_usuario` (u) com `raw_hap_tb_pessoa` (p) por
+-- MAGIC > CD_PESSOA. Antes do join, em cada tabela: filtre FL_EXCLUIDO = 0, converta
+-- MAGIC > as colunas decimais para os tipos apropriados (BIGINT para códigos como
+-- MAGIC > NU_USUARIO/NU_TITULAR/CD_PESSOA/CD_PLANO/CD_CANCELAMENTO, INT para
+-- MAGIC > FL_STATUS_USUARIO, DATE para as datas, DECIMAL(18,2) para VL_MENSALIDADE),
+-- MAGIC > e mantenha apenas a versão mais recente por chave usando QUALIFY
+-- MAGIC > ROW_NUMBER() ordenado por dt_carga_bronze DESC (particionando por
+-- MAGIC > NU_USUARIO na tabela de usuário e por CD_PESSOA na de pessoa). Use INNER
+-- MAGIC > JOIN para manter só beneficiários com cadastro válido. Selecione da tabela
+-- MAGIC > de usuário: NU_USUARIO, NU_TITULAR, FL_STATUS_USUARIO, CD_PLANO,
+-- MAGIC > DT_CADASTRAMENTO, DT_CANCELAMENTO, CD_CANCELAMENTO, CD_USUARIO,
+-- MAGIC > VL_MENSALIDADE. E da tabela de pessoa: CD_PESSOA, a coluna
+-- MAGIC > DT_NASCIMENTO_FUNDACAO (renomeie para DT_NASCIMENTO), FL_SEXO (renomeie
+-- MAGIC > para CD_SEXO), a coluna de documento NU_CGC_CPF (renomeie para NU_CGC_CPF)
+-- MAGIC > e NM_PESSOA_RAZAO_SOCIAL."_
+-- MAGIC
+-- MAGIC > 💡 **Atenção:** a tabela de pessoa tem duas colunas de documento parecidas
+-- MAGIC > (`NU_CGC_CPF` e `NU_CNPJ_CPF`). Use **`NU_CGC_CPF`**, que é a que está
+-- MAGIC > preenchida. Sempre confira as colunas que a IA escolheu contra a tabela real.
 -- MAGIC
 -- MAGIC Revise o SQL gerado (compare com `respostas/02_...`) antes de rodar.
 
