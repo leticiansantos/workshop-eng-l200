@@ -2,21 +2,74 @@
 -- MAGIC %md
 -- MAGIC # Módulo 06 — Lakeflow Declarative Pipeline (SQL)
 -- MAGIC
--- MAGIC Reescreva o pipeline dos módulos 02–04 de forma **declarativa**.
+-- MAGIC Aqui reescrevemos o pipeline dos módulos 02–04 de forma **declarativa**.
+-- MAGIC Em vez de dizer *como* fazer (um `CREATE TABLE` após o outro, na ordem certa),
+-- MAGIC declaramos *o que* cada tabela é; o Lakeflow descobre a ordem, materializa e
+-- MAGIC aplica as regras de qualidade.
 -- MAGIC
--- MAGIC > **Como executar:** este notebook é o código-fonte de um **Pipeline**.
--- MAGIC > Crie um Lakeflow Declarative Pipeline apontando para ele, destino =
--- MAGIC > catálogo `workshop_dev` + seu schema, e clique em Start.
+-- MAGIC > **Este módulo não tem exercícios.** O notebook é o **código-fonte de um
+-- MAGIC > Pipeline** — ele roda como um todo, não célula a célula. Leia, entenda e
+-- MAGIC > execute-o criando um Pipeline (instruções no fim).
 -- MAGIC
--- MAGIC Sintaxe: `CREATE OR REFRESH MATERIALIZED VIEW <nome> ( CONSTRAINT <c>
--- MAGIC EXPECT (<cond>) [ON VIOLATION DROP ROW] ) AS <query>`. Referências internas
--- MAGIC usam o prefixo `LIVE.`.
+-- MAGIC ## Conceitos-chave
+-- MAGIC - `CREATE OR REFRESH MATERIALIZED VIEW` — tabela gerenciada pelo pipeline.
+-- MAGIC - Prefixo `LIVE.` — referência a **outra tabela do mesmo pipeline**; é isso
+-- MAGIC   que cria as dependências que o Lakeflow deduz automaticamente. Fontes
+-- MAGIC   externas (a bronze) são referenciadas **sem** `LIVE.`.
+-- MAGIC - `CONSTRAINT ... EXPECT (...) [ON VIOLATION DROP ROW]` — regras de qualidade
+-- MAGIC   declarativas, com métricas visíveis no painel do pipeline.
 
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC ## Células prontas — silver eventos e vigências
--- MAGIC Estas duas MVs já vêm prontas como referência de sintaxe declarativa.
+-- MAGIC ## Silver 1 — usuário + pessoa (com expectativas de qualidade)
+
+-- COMMAND ----------
+
+CREATE OR REFRESH MATERIALIZED VIEW slv_usuario_pessoa (
+  CONSTRAINT pessoa_valida    EXPECT (CD_PESSOA IS NOT NULL) ON VIOLATION DROP ROW,
+  CONSTRAINT status_conhecido EXPECT (FL_STATUS_USUARIO IS NOT NULL)
+) AS
+WITH usuario_limpo AS (
+  SELECT
+    CAST(NU_USUARIO AS BIGINT)            AS NU_USUARIO,
+    CAST(NU_TITULAR AS BIGINT)            AS NU_TITULAR,
+    CAST(CD_PESSOA  AS BIGINT)            AS CD_PESSOA,
+    CD_USUARIO,
+    CAST(FL_STATUS_USUARIO AS INT)        AS FL_STATUS_USUARIO,
+    CAST(CD_PLANO AS INT)                 AS CD_PLANO,
+    CAST(DT_CADASTRAMENTO AS DATE)        AS DT_CADASTRAMENTO,
+    CAST(DT_CANCELAMENTO  AS DATE)        AS DT_CANCELAMENTO,
+    CAST(CD_CANCELAMENTO  AS INT)         AS CD_CANCELAMENTO,
+    CAST(VL_MENSALIDADE AS DECIMAL(18,2)) AS VL_MENSALIDADE
+  FROM hapvida_dev.bronze.raw_hap_tb_usuario
+  WHERE CAST(FL_EXCLUIDO AS INT) = 0
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY NU_USUARIO ORDER BY dt_carga_bronze DESC) = 1
+),
+pessoa_limpa AS (
+  SELECT
+    CAST(CD_PESSOA AS BIGINT)             AS CD_PESSOA,
+    CAST(DT_NASCIMENTO_FUNDACAO AS DATE)  AS DT_NASCIMENTO,
+    FL_SEXO                               AS CD_SEXO,
+    CAST(NU_CGC_CPF AS DECIMAL(38,0))     AS NU_CGC_CPF,
+    NM_PESSOA_RAZAO_SOCIAL
+  FROM hapvida_dev.bronze.raw_hap_tb_pessoa
+  WHERE CAST(FL_EXCLUIDO AS INT) = 0
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY CD_PESSOA ORDER BY dt_carga_bronze DESC) = 1
+)
+SELECT
+  u.NU_USUARIO, u.NU_TITULAR, u.FL_STATUS_USUARIO, u.CD_PLANO,
+  u.DT_CADASTRAMENTO, u.DT_CANCELAMENTO, u.CD_CANCELAMENTO, u.CD_USUARIO, u.VL_MENSALIDADE,
+  p.CD_PESSOA, p.DT_NASCIMENTO, p.CD_SEXO, p.NU_CGC_CPF, p.NM_PESSOA_RAZAO_SOCIAL
+FROM usuario_limpo u
+INNER JOIN pessoa_limpa p ON p.CD_PESSOA = u.CD_PESSOA;
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ## Silver 2 — eventos unificados (histórico + estado atual)
+-- MAGIC Note o `LIVE.slv_usuario_pessoa`: é isso que diz ao Lakeflow que esta tabela
+-- MAGIC depende da anterior.
 
 -- COMMAND ----------
 
@@ -48,6 +101,11 @@ SELECT * FROM eventos_atual;
 
 -- COMMAND ----------
 
+-- MAGIC %md
+-- MAGIC ## Silver 3 — vigências (SCD2)
+
+-- COMMAND ----------
+
 CREATE OR REFRESH MATERIALIZED VIEW slv_beneficiario_vigencia (
   CONSTRAINT vigencia_valida EXPECT (DT_FIM_VIGENCIA > DT_INICIO_VIGENCIA) ON VIOLATION DROP ROW
 ) AS
@@ -74,27 +132,7 @@ WINDOW w AS (PARTITION BY NU_USUARIO ORDER BY DT_FIM_VIGENCIA DESC
 -- COMMAND ----------
 
 -- MAGIC %md
--- MAGIC ## ⭐ Exercício-chave (com o Assistant) — MV silver com CONSTRAINT EXPECT
--- MAGIC
--- MAGIC Esta é a primeira MV do pipeline (as de cima dependem dela).
--- MAGIC **PROMPT sugerido para o Assistant:**
--- MAGIC > _"Crie uma MATERIALIZED VIEW chamada slv_usuario_pessoa com a mesma lógica
--- MAGIC > do módulo 02 (limpeza e join de usuario e pessoa lendo de
--- MAGIC > hapvida_dev.bronze), adicionando duas expectativas de qualidade:
--- MAGIC > CONSTRAINT pessoa_valida EXPECT (CD_PESSOA IS NOT NULL) ON VIOLATION DROP ROW,
--- MAGIC > e CONSTRAINT status_conhecido EXPECT (FL_STATUS_USUARIO IS NOT NULL). Use a
--- MAGIC > sintaxe CREATE OR REFRESH MATERIALIZED VIEW."_
--- MAGIC
--- MAGIC (Compare com `respostas/06_lakeflow_pipeline.sql`.)
-
--- COMMAND ----------
-
--- 👉 Gere o SQL aqui com o Databricks Assistant usando o prompt acima.
-
--- COMMAND ----------
-
--- MAGIC %md
--- MAGIC ## Célula pronta — gold declarativa
+-- MAGIC ## Gold — tabela enriquecida para churn
 
 -- COMMAND ----------
 
@@ -114,3 +152,15 @@ SELECT
   CASE WHEN b.FL_STATUS_USUARIO = 4 THEN 1 ELSE 0 END AS FL_CHURN
 FROM LIVE.slv_beneficiario_vigencia b
 LEFT JOIN LIVE.slv_usuario_pessoa p ON b.NU_USUARIO = p.NU_USUARIO;
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ## Como executar este notebook como Pipeline
+-- MAGIC
+-- MAGIC 1. Menu **Workflows → Pipelines → Create pipeline** (ou **Lakeflow → Pipelines**).
+-- MAGIC 2. Em **Source code / Paths**, aponte para este notebook (`06_lakeflow_pipeline`).
+-- MAGIC 3. Defina o **destino**: catálogo `workshop_dev` e o **seu** schema.
+-- MAGIC 4. Escolha o modo **Triggered** (roda uma vez) e clique em **Start**.
+-- MAGIC 5. Acompanhe o **grafo** (a ordem que o Lakeflow deduziu) e o **painel de
+-- MAGIC    expectativas** (quantas linhas passaram/violaram cada CONSTRAINT).

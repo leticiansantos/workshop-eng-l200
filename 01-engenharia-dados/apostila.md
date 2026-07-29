@@ -95,7 +95,7 @@ Assim o mesmo código funciona para todos, sem colisão de nomes.
 | — | **Almoço** | — | — | — |
 | 04 | Gold — tabela enriquecida | 75 min | 1 | joins, surrogate key, features (idade, churn) |
 | 05 | Qualidade de dados | 45 min | 1 | painel de métricas, porta de qualidade |
-| 06 | Lakeflow Declarative Pipeline | 75 min | 1 | MV declarativas + `CONSTRAINT EXPECT` |
+| 06 | Lakeflow Declarative Pipeline | 75 min | — | MV declarativas + `CONSTRAINT EXPECT` (leitura + execução) |
 | 07 | Consumo & orquestração | 45 min | 1 | análise de churn, Job vs. Pipeline |
 
 > Os exercícios ⭐ são os pontos-chave de cada módulo, resolvidos com o
@@ -200,7 +200,11 @@ pipeline não deveria seguir para produção.
 
 ## Módulo 06 — Lakeflow Declarative Pipeline
 
-**Meta:** reescrever o pipeline de forma **declarativa**.
+**Meta:** entender e executar o mesmo pipeline de forma **declarativa**.
+
+> **Sem exercícios** neste módulo: o notebook 06 é o **código-fonte de um
+> Pipeline** (roda como um todo, não célula a célula). Você vai ler o código
+> pronto, entender os conceitos e executá-lo criando um Pipeline.
 
 Em vez de dizer *como* (ordem de CREATE TABLEs), você declara *o que* cada
 tabela é. O Lakeflow resolve dependências, materializa e aplica qualidade via
@@ -208,7 +212,8 @@ tabela é. O Lakeflow resolve dependências, materializa e aplica qualidade via
 
 - Materialized Views: `CREATE OR REFRESH MATERIALIZED VIEW ...`
 - Referências internas ao pipeline usam o prefixo `LIVE.`
-- Execução: crie um **Pipeline** apontando para o notebook 06.
+- Execução: crie um **Pipeline** apontando para o notebook 06 (passo a passo no
+  fim do próprio notebook).
 
 ---
 
