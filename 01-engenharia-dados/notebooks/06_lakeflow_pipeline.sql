@@ -18,6 +18,14 @@
 -- MAGIC   externas (a bronze) são referenciadas **sem** `LIVE.`.
 -- MAGIC - `CONSTRAINT ... EXPECT (...) [ON VIOLATION DROP ROW]` — regras de qualidade
 -- MAGIC   declarativas, com métricas visíveis no painel do pipeline.
+-- MAGIC
+-- MAGIC > **Importante — nomes com prefixo `sdp_`:** um Lakeflow Pipeline precisa
+-- MAGIC > ser o **dono** das tabelas que materializa. Se as tabelas `slv_*`/`gold_*`
+-- MAGIC > já existirem (porque você rodou os módulos 02–04 manualmente ou como Job),
+-- MAGIC > o pipeline falha com `TABLE_ALREADY_EXISTS`. Por isso, aqui as tabelas do
+-- MAGIC > pipeline usam o prefixo **`sdp_`** — assim a versão declarativa **convive**
+-- MAGIC > com a imperativa no mesmo schema e o pipeline pode ser executado quantas
+-- MAGIC > vezes quiser.
 
 -- COMMAND ----------
 
@@ -26,7 +34,7 @@
 
 -- COMMAND ----------
 
-CREATE OR REFRESH MATERIALIZED VIEW slv_usuario_pessoa (
+CREATE OR REFRESH MATERIALIZED VIEW sdp_slv_usuario_pessoa (
   CONSTRAINT pessoa_valida    EXPECT (CD_PESSOA IS NOT NULL) ON VIOLATION DROP ROW,
   CONSTRAINT status_conhecido EXPECT (FL_STATUS_USUARIO IS NOT NULL)
 ) AS
@@ -68,12 +76,12 @@ INNER JOIN pessoa_limpa p ON p.CD_PESSOA = u.CD_PESSOA;
 
 -- MAGIC %md
 -- MAGIC ## Silver 2 — eventos unificados (histórico + estado atual)
--- MAGIC Note o `LIVE.slv_usuario_pessoa`: é isso que diz ao Lakeflow que esta tabela
--- MAGIC depende da anterior.
+-- MAGIC Note o `LIVE.sdp_slv_usuario_pessoa`: é isso que diz ao Lakeflow que esta
+-- MAGIC tabela depende da anterior.
 
 -- COMMAND ----------
 
-CREATE OR REFRESH MATERIALIZED VIEW slv_eventos AS
+CREATE OR REFRESH MATERIALIZED VIEW sdp_slv_eventos AS
 WITH eventos_historico AS (
   SELECT
     CAST(NU_USUARIO AS BIGINT)     AS NU_USUARIO,
@@ -93,7 +101,7 @@ eventos_atual AS (
   SELECT NU_USUARIO, NU_TITULAR, FL_STATUS_USUARIO, CD_PLANO,
          DT_CADASTRAMENTO, DT_CANCELAMENTO, CD_CANCELAMENTO,
          CURRENT_DATE() AS DT_AUDIT
-  FROM LIVE.slv_usuario_pessoa
+  FROM LIVE.sdp_slv_usuario_pessoa
 )
 SELECT * FROM eventos_historico
 UNION ALL
@@ -106,7 +114,7 @@ SELECT * FROM eventos_atual;
 
 -- COMMAND ----------
 
-CREATE OR REFRESH MATERIALIZED VIEW slv_beneficiario_vigencia (
+CREATE OR REFRESH MATERIALIZED VIEW sdp_slv_beneficiario_vigencia (
   CONSTRAINT vigencia_valida EXPECT (DT_FIM_VIGENCIA > DT_INICIO_VIGENCIA) ON VIOLATION DROP ROW
 ) AS
 WITH vigencias AS (
@@ -114,7 +122,7 @@ WITH vigencias AS (
     DT_AUDIT AS DT_FIM_VIGENCIA,
     COALESCE(LAG(DT_AUDIT) OVER (PARTITION BY NU_USUARIO ORDER BY DT_AUDIT),
              DT_CADASTRAMENTO, DT_AUDIT) AS DT_INICIO_VIGENCIA
-  FROM LIVE.slv_eventos
+  FROM LIVE.sdp_slv_eventos
 )
 SELECT
   NU_USUARIO,
@@ -136,7 +144,7 @@ WINDOW w AS (PARTITION BY NU_USUARIO ORDER BY DT_FIM_VIGENCIA DESC
 
 -- COMMAND ----------
 
-CREATE OR REFRESH MATERIALIZED VIEW gold_beneficiario_enriquecida (
+CREATE OR REFRESH MATERIALIZED VIEW sdp_gold_beneficiario_enriquecida (
   CONSTRAINT sk_nao_nula     EXPECT (SK_BENEFICIARIO IS NOT NULL) ON VIOLATION DROP ROW,
   CONSTRAINT idade_plausivel EXPECT (IDADE BETWEEN 0 AND 120)
 ) AS
@@ -150,8 +158,8 @@ SELECT
   FLOOR(DATEDIFF(b.DT_FIM_VIGENCIA, p.DT_NASCIMENTO) / 365.25) AS IDADE,
   p.CD_SEXO, p.NU_CGC_CPF, p.NM_PESSOA_RAZAO_SOCIAL, p.CD_USUARIO, p.VL_MENSALIDADE,
   CASE WHEN b.FL_STATUS_USUARIO = 4 THEN 1 ELSE 0 END AS FL_CHURN
-FROM LIVE.slv_beneficiario_vigencia b
-LEFT JOIN LIVE.slv_usuario_pessoa p ON b.NU_USUARIO = p.NU_USUARIO;
+FROM LIVE.sdp_slv_beneficiario_vigencia b
+LEFT JOIN LIVE.sdp_slv_usuario_pessoa p ON b.NU_USUARIO = p.NU_USUARIO;
 
 -- COMMAND ----------
 
